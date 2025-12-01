@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const connectDB = require('./config/db');
 
 const authRoutes = require('./routes/authRoutes');
 const groupRoutes = require('./routes/groupRoutes');
@@ -25,6 +26,19 @@ const createApp = () => {
 
   app.use(express.json());
   app.use(cookieParser());
+
+  // Ensure DB connection only for API routes that need it (avoid blocking root/favicon)
+  app.use(async (req, res, next) => {
+    if (req.path.startsWith('/api') && req.path !== '/api/health') {
+      try {
+        await connectDB();
+      } catch (err) {
+        console.error('DB connection error', err);
+        return res.status(500).json({ message: 'Database connection failed' });
+      }
+    }
+    next();
+  });
 
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });

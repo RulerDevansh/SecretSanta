@@ -5,20 +5,15 @@ const serverless = require('serverless-http');
 dotenv.config();
 
 const createApp = require('../src/app');
-const connectDB = require('../src/config/db');
 
 let handler;
 
-module.exports = async (req, res) => {
+module.exports = (req, res) => {
   try {
-    // Ensure DB is connected (cached across invocations)
-    await connectDB();
-
     if (!handler) {
       const app = createApp();
       handler = serverless(app);
     }
-
     return handler(req, res);
   } catch (err) {
     console.error('Serverless handler error', err);
