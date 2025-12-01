@@ -165,7 +165,7 @@ const DashboardView = ({ token, user, onLogout }) => {
     <div className="min-h-screen">
       <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between px-6 py-6">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-red-500 font-bold">Holiday Control Center</p>
+          <p className="text-sm uppercase tracking-[0.3em] text-white font-bold">Holiday Control Center</p>
           <h2 className="text-3xl font-bold text-yellow-500">Welcome back, {user.name}</h2>
         </div>
         <div className="flex items-center gap-3">
@@ -212,7 +212,7 @@ const DashboardView = ({ token, user, onLogout }) => {
           </button>
         </section>
 
-        <section className="rounded-3xl border border-white/60 bg-white/75 p-6 shadow-xl">
+        <section className="rounded-3xl border border-white/60 bg-white/75 p-6 shadow-xl w-full min-w-0 overflow-hidden">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h3 className="text-2xl font-semibold text-holly-700">Your Groups</h3>
@@ -247,7 +247,7 @@ const DashboardView = ({ token, user, onLogout }) => {
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={handleRefresh}
-                    className="rounded-2xl bg-white/80 px-4 py-2 font-semibold text-holly-600 border border-holly-200"
+                    className="rounded-2xl bg-lime-500 px-4 py-2 font-semibold text-white border border-holly-200"
                   >
                     Refresh
                   </button>
@@ -327,6 +327,7 @@ const DashboardView = ({ token, user, onLogout }) => {
           value={createTitle}
           onChange={(v) => setCreateTitle(v)}
           submitText="Get Secret Code"
+          disabled={loading}
         />
       )}
 
@@ -341,6 +342,7 @@ const DashboardView = ({ token, user, onLogout }) => {
           value={joinCode}
           onChange={(v) => setJoinCode(v.toUpperCase())}
           submitText="Join Group"
+          disabled={loading}
         />
       )}
 

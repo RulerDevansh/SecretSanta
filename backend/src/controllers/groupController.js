@@ -82,17 +82,19 @@ exports.joinGroup = async (req, res) => {
       return res.status(400).json({ message: 'Group code is required' });
     }
 
-    const group = await Group.findOne({ code: code.trim().toUpperCase() });
-    if (!group) {
+    const normalizedCode = code.trim().toUpperCase();
+    const existing = await Group.findOne({ code: normalizedCode });
+    if (!existing) {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    const isMember = group.members.some((memberId) => memberId.toString() === req.user.id);
-    if (!isMember) {
-      group.members.push(req.user.id);
-      await group.save();
-      await User.findByIdAndUpdate(req.user.id, { $addToSet: { groups: group._id } });
-    }
+    const group = await Group.findOneAndUpdate(
+      { code: normalizedCode },
+      { $addToSet: { members: req.user.id } },
+      { new: true }
+    );
+
+    await User.findByIdAndUpdate(req.user.id, { $addToSet: { groups: group._id } });
 
     res.json(await buildGroupResponse(group));
   } catch (error) {
