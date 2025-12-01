@@ -1,4 +1,4 @@
-const { randomUUID } = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 const Group = require('../models/Group');
 const User = require('../models/User');
 const Wish = require('../models/Wish');
@@ -35,7 +35,7 @@ const generateGroupCode = async () => {
   let code;
   let exists = true;
   while (exists) {
-    code = randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
+    code = uuidv4().replace(/-/g, '').slice(0, 6).toUpperCase();
     exists = await Group.exists({ code });
   }
   return code;
