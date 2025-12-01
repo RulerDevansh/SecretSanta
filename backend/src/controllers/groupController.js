@@ -1,4 +1,12 @@
-const { v4: uuidv4 } = require('uuid');
+// uuid v13 is ESM-only; use dynamic import from CommonJS context
+let _uuidv4;
+const loadUuid = async () => {
+  if (!_uuidv4) {
+    const { v4 } = await import('uuid');
+    _uuidv4 = v4;
+  }
+  return _uuidv4;
+};
 const Group = require('../models/Group');
 const User = require('../models/User');
 const Wish = require('../models/Wish');
@@ -32,6 +40,7 @@ const buildGroupResponse = async (group) => {
 };
 
 const generateGroupCode = async () => {
+  const uuidv4 = await loadUuid();
   let code;
   let exists = true;
   while (exists) {
