@@ -182,8 +182,12 @@ exports.submitWish = async (req, res) => {
     wishDoc.deliveredToSanta = true;
     await wishDoc.save();
 
-    if (!santaUser.hasAssignedGift) {
-      santaUser.hasAssignedGift = true;
+    // Mark the santa as assigned for this specific group
+    if (!Array.isArray(santaUser.hasAssignedGift)) {
+      santaUser.hasAssignedGift = [];
+    }
+    if (!santaUser.hasAssignedGift.includes(group.title)) {
+      santaUser.hasAssignedGift.push(group.title);
       await santaUser.save();
     }
 
@@ -203,7 +207,8 @@ const pickSecretSanta = async ({ group, exclude }) => {
     throw new Error('No eligible members to assign');
   }
 
-  const freshCandidates = await User.find({ _id: { $in: candidateIds }, hasAssignedGift: false }).select('_id');
+  // Treat users as "fresh" if they have not been assigned in this specific group
+  const freshCandidates = await User.find({ _id: { $in: candidateIds }, hasAssignedGift: { $ne: group.title } }).select('_id');
   const pool = freshCandidates.length
     ? freshCandidates
     : await User.find({ _id: { $in: candidateIds } }).select('_id');

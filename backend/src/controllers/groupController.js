@@ -198,6 +198,8 @@ exports.deleteGroup = async (req, res) => {
     await Wish.deleteMany({ group: group._id });
     // Pull group reference from users
     await User.updateMany({ groups: group._id }, { $pull: { groups: group._id } });
+    // Also remove this group's title from users' hasAssignedGift array
+    await User.updateMany({}, { $pull: { hasAssignedGift: group.title } });
     // Delete the group itself
     await Group.deleteOne({ _id: group._id });
 
@@ -226,7 +228,7 @@ exports.leaveGroup = async (req, res) => {
     }
 
     await Group.updateOne({ _id: group._id }, { $pull: { members: req.user.id } });
-    await User.updateOne({ _id: req.user.id }, { $pull: { groups: group._id } });
+    await User.updateOne({ _id: req.user.id }, { $pull: { groups: group._id, hasAssignedGift: group.title } });
     await Wish.deleteOne({ group: group._id, user: req.user.id });
 
     return res.json({ message: 'Left group successfully' });

@@ -23,8 +23,8 @@ const userSchema = new mongoose.Schema(
       default: 'local',
     },
     hasAssignedGift: {
-      type: Boolean,
-      default: false,
+      type: [String],
+      default: [],
     },
     groups: [
       {
