@@ -21,11 +21,6 @@ const DashboardView = ({ token, user, onLogout }) => {
 
   useEffect(() => {
     loadGroups();
-    // Restore banner dismiss state
-    try {
-      const hidden = localStorage.getItem('hideEmailTip') === 'true';
-      setShowEmailTip(!hidden);
-    } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-dismiss success messages after 5 seconds
@@ -185,7 +180,7 @@ const DashboardView = ({ token, user, onLogout }) => {
     try {
       await navigator.clipboard.writeText(selectedGroup.code);
       setMessage('Group code copied to clipboard');
-    } catch (e) {
+    } catch {
       setError('Could not copy code');
     }
   };
@@ -213,11 +208,10 @@ const DashboardView = ({ token, user, onLogout }) => {
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 shadow-sm flex items-start justify-between gap-3">
             <p className="text-sm">
               Heads up: Secret Santa emails can land in Gmail <span className="font-semibold">Promotions</span> or
-              <span className="font-semibold"> Spam</span>. Please check those tabs and mark <span className="font-semibold">Not spam</span>
-              or drag the email to <span className="font-semibold">Primary</span>.
+              <span className="font-semibold"> Spam</span>.
             </p>
             <button
-              onClick={() => { setShowEmailTip(false); try { localStorage.setItem('hideEmailTip', 'true'); } catch {} }}
+              onClick={() => { setShowEmailTip(false); }}
               className="ml-3 shrink-0 rounded-lg border border-amber-300 bg-white/70 px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-white"
             >
               Dismiss
