@@ -43,6 +43,7 @@ export const groupApi = {
   join: (token, payload) => apiRequest('/groups/join', { method: 'POST', body: payload, token }),
   getByCode: (token, code) => apiRequest(`/groups/${code}`, { token }),
   start: (token, code) => apiRequest(`/groups/${code}/start`, { method: 'PATCH', token }),
+  leave: (token, code) => apiRequest(`/groups/${code}/leave`, { method: 'DELETE', token }),
   delete: (token, code) => apiRequest(`/groups/${code}`, { method: 'DELETE', token }),
 };
 

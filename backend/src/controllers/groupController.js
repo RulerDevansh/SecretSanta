@@ -88,11 +88,19 @@ exports.joinGroup = async (req, res) => {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    const group = await Group.findOneAndUpdate(
-      { code: normalizedCode },
-      { $addToSet: { members: req.user.id } },
-      { new: true }
-    );
+    // If Secret Santa has started, block new members but allow existing members to fetch the group
+    const alreadyMember = existing.members.some((m) => m.toString() === req.user.id);
+    if (existing.hasStarted && !alreadyMember) {
+      return res.status(400).json({ message: 'Secret Santa already started. Joining is closed.' });
+    }
+
+    const group = alreadyMember
+      ? existing
+      : await Group.findOneAndUpdate(
+          { code: normalizedCode },
+          { $addToSet: { members: req.user.id } },
+          { new: true }
+        );
 
     await User.findByIdAndUpdate(req.user.id, { $addToSet: { groups: group._id } });
 
@@ -197,5 +205,33 @@ exports.deleteGroup = async (req, res) => {
   } catch (error) {
     console.error('Delete group error', error);
     res.status(500).json({ message: 'Failed to delete group' });
+  }
+};
+
+exports.leaveGroup = async (req, res) => {
+  try {
+    const code = req.params.code.toUpperCase();
+    const group = await Group.findOne({ code });
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    if (group.host.toString() === req.user.id) {
+      return res.status(403).json({ message: 'Host cannot leave the group' });
+    }
+
+    const isMember = group.members.some((m) => m.toString() === req.user.id);
+    if (!isMember) {
+      return res.status(400).json({ message: 'You are not a member of this group' });
+    }
+
+    await Group.updateOne({ _id: group._id }, { $pull: { members: req.user.id } });
+    await User.updateOne({ _id: req.user.id }, { $pull: { groups: group._id } });
+    await Wish.deleteOne({ group: group._id, user: req.user.id });
+
+    return res.json({ message: 'Left group successfully' });
+  } catch (error) {
+    console.error('Leave group error', error);
+    res.status(500).json({ message: 'Failed to leave group' });
   }
 };

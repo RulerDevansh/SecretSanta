@@ -28,6 +28,20 @@ const DashboardView = ({ token, user, onLogout }) => {
     } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-dismiss success messages after 5 seconds
+  useEffect(() => {
+    if (!message) return;
+    const id = setTimeout(() => setMessage(''), 5000);
+    return () => clearTimeout(id);
+  }, [message]);
+
+  // Auto-dismiss error messages after 5 seconds
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(''), 5000);
+    return () => clearTimeout(id);
+  }, [error]);
+
   const loadGroups = async ({ autoSelect = !selectedGroup } = {}) => {
     try {
       const data = await groupApi.getMine(token);
@@ -93,6 +107,11 @@ const DashboardView = ({ token, user, onLogout }) => {
       await loadGroups({ autoSelect: false });
     } catch (err) {
       setError(err.message);
+      // If joining is closed after Secret Santa start, close the modal as a UX cue
+      if (String(err.message).toLowerCase().includes('secret santa already started')) {
+        setJoinModalOpen(false);
+        setJoinCode('');
+      }
     } finally {
       setLoading(false);
     }
@@ -159,6 +178,16 @@ const DashboardView = ({ token, user, onLogout }) => {
   const openWishModal = () => {
     setWishModalKey((key) => key + 1);
     setWishModalOpen(true);
+  };
+
+  const copyGroupCode = async () => {
+    if (!selectedGroup?.code) return;
+    try {
+      await navigator.clipboard.writeText(selectedGroup.code);
+      setMessage('Group code copied to clipboard');
+    } catch (e) {
+      setError('Could not copy code');
+    }
   };
 
   return (
@@ -241,7 +270,17 @@ const DashboardView = ({ token, user, onLogout }) => {
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-sm uppercase tracking-[0.3em] text-holly-600">Group code</p>
-                  <h4 className="text-3xl font-bold text-holly-700">{selectedGroup.code}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-3xl font-bold text-holly-700">{selectedGroup.code}</h4>
+                    <button
+                      onClick={copyGroupCode}
+                      disabled={loading}
+                      className="rounded-full border border-holly-200 bg-white/80 px-3 py-1 text-xs font-semibold text-holly-700 hover:bg-white disabled:opacity-40"
+                      title="Copy code"
+                    >
+                      Copy
+                    </button>
+                  </div>
                   <p className="text-holly-600">Share this code so friends can join.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -274,6 +313,32 @@ const DashboardView = ({ token, user, onLogout }) => {
                       Delete Group
                     </button>
                   )}
+                  {selectedGroup.host !== user.id && (
+                    <button
+                      onClick={async () => {
+                        if (!selectedGroup) return;
+                        const confirmLeave = window.confirm('Leave this group? You will be removed from members and your wish (if any) will be deleted.');
+                        if (!confirmLeave) return;
+                        setLoading(true);
+                        setError('');
+                        try {
+                          await groupApi.leave(token, selectedGroup.code);
+                          setGroups((prev) => prev.filter((g) => g.code !== selectedGroup.code));
+                          setSelectedGroup(null);
+                          setWishStatus({ submitted: false, delivered: false });
+                          setMessage('You left the group successfully');
+                        } catch (err) {
+                          setError(err.message);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading}
+                      className="rounded-2xl bg-slate-200 hover:bg-slate-300 px-4 py-2 font-semibold text-slate-900 border border-slate-300 shadow disabled:opacity-40"
+                    >
+                      Leave Group
+                    </button>
+                  )}
                   {selectedGroup.hasStarted && !wishStatus.submitted && (
                     <button
                       onClick={openWishModal}
@@ -292,7 +357,7 @@ const DashboardView = ({ token, user, onLogout }) => {
                   </p>
                 ) : (
                   <p>
-                    Waiting for the host to start Secret Santa. You can still see who joined and refresh for new members.
+                    Waiting for the host to start Secret Santa. You can see who joined and refresh for new members.
                   </p>
                 )}
                 {wishStatus.submitted && (

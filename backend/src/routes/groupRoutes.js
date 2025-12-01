@@ -7,6 +7,7 @@ const {
   startSecretSanta,
   getMyGroups,
   deleteGroup,
+  leaveGroup,
 } = require('../controllers/groupController');
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.post('/', createGroup);
 router.post('/join', joinGroup);
 router.get('/:code', getGroupByCode);
 router.patch('/:code/start', startSecretSanta);
+router.delete('/:code/leave', leaveGroup);
 router.delete('/:code', deleteGroup);
 
 module.exports = router;
