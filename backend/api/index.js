@@ -14,6 +14,10 @@ module.exports = (req, res) => {
       const app = createApp();
       handler = serverless(app);
     }
+    // Ensure Express sees the '/api' prefix when running under Vercel
+    if (!req.url.startsWith('/api')) {
+      req.url = '/api' + req.url;
+    }
     return handler(req, res);
   } catch (err) {
     console.error('Serverless handler error', err);
