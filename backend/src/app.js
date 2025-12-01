@@ -44,6 +44,10 @@ const createApp = () => {
     res.json({ status: 'ok', time: new Date().toISOString() });
   });
 
+  // Diagnostics (db/connectivity etc.)
+  const diagRoutes = require('./routes/diagnosticsRoutes');
+  app.use('/api/diag', diagRoutes);
+
   app.use('/api/auth', authRoutes);
   app.use('/api/groups', groupRoutes);
   app.use('/api/wishes', wishRoutes);
