@@ -201,22 +201,35 @@ exports.submitWish = async (req, res) => {
   }
 };
 
+// Concurrency-safe Santa reservation.
+// Attempts to atomically mark a candidate by adding the group title to hasAssignedGift.
+// If another request already reserved the same candidate, we retry with remaining pool.
 const pickSecretSanta = async ({ group, exclude }) => {
-  const candidateIds = group.members.map((memberId) => memberId.toString()).filter((id) => id !== exclude);
-  if (!candidateIds.length) {
-    throw new Error('No eligible members to assign');
-  }
+  let candidateIds = group.members.map((m) => m.toString()).filter((id) => id !== exclude);
+  if (!candidateIds.length) throw new Error('No eligible members to assign');
 
-  // Treat users as "fresh" if they have not been assigned in this specific group
-  const freshCandidates = await User.find({ _id: { $in: candidateIds }, hasAssignedGift: { $ne: group.title } }).select('_id');
-  const pool = freshCandidates.length
-    ? freshCandidates
-    : await User.find({ _id: { $in: candidateIds } }).select('_id');
-
+  // Load candidates with a flag whether they are fresh for this group
+  const allCandidates = await User.find({ _id: { $in: candidateIds } }).select('_id hasAssignedGift');
+  // Separate fresh (not assigned in this group)
+  let pool = allCandidates.filter((u) => !u.hasAssignedGift?.includes(group.title));
   if (!pool.length) {
     throw new Error('No eligible members to assign');
   }
 
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  return pool[randomIndex]._id;
+  // Avoid infinite loops; attempt up to pool size times
+  while (pool.length) {
+    const idx = Math.floor(Math.random() * pool.length);
+    const chosen = pool[idx];
+    // Try to reserve atomically: only update if group.title not yet present
+    const reserveResult = await User.updateOne(
+      { _id: chosen._id, hasAssignedGift: { $ne: group.title } },
+      { $addToSet: { hasAssignedGift: group.title } }
+    );
+    if (reserveResult.modifiedCount === 1) {
+      return chosen._id; // success
+    }
+    // Someone else reserved simultaneously; remove this candidate and retry
+    pool.splice(idx, 1);
+  }
+  throw new Error('No eligible members to assign');
 };
